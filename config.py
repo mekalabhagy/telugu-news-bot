@@ -21,7 +21,8 @@ _load_env_file()
 
 
 def env(key: str, default: str = "") -> str:
-    return os.environ.get(key, default)
+    # An empty value (e.g. an unset GitHub variable) counts as "not set"
+    return os.environ.get(key) or default
 
 
 # ---- Channel branding -------------------------------------------------------
