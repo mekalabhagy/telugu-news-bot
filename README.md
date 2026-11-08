@@ -29,7 +29,8 @@ Fonts (Noto Sans Telugu + Noto Sans, SIL OFL) are bundled in `fonts/`.
    and generate an access token. Note your **Instagram user ID**. Prefer a long-lived or
    System User token so it does not expire every 60 days. Publishing from your own account in
    development mode works without full app review.
-3. **Claude API key** from the Anthropic Console.
+3. **LLM key** (free option): a Gemini API key from Google AI Studio (aistudio.google.com/apikey), set `LLM_PROVIDER=gemini`.
+   Or a Claude API key from the Anthropic Console (paid), set `LLM_PROVIDER=anthropic`.
 4. **Public image bucket** (Instagram downloads the image from a URL). Cloudflare R2 or any
    S3-compatible bucket with public read works.
 
@@ -48,9 +49,9 @@ python main.py approve --all   # publish them
 
 Push this folder to a **private** GitHub repo, then add:
 
-- Secrets: `ANTHROPIC_API_KEY`, `IG_USER_ID`, `IG_ACCESS_TOKEN`, `S3_ENDPOINT`, `S3_BUCKET`,
+- Secrets: `GEMINI_API_KEY` (or `ANTHROPIC_API_KEY`), `IG_USER_ID`, `IG_ACCESS_TOKEN`, `S3_ENDPOINT`, `S3_BUCKET`,
   `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_PUBLIC_BASE_URL`
-- Variables: `POST_MODE`, `CHANNEL_NAME`, `CHANNEL_HANDLE`
+- Variables: `LLM_PROVIDER`, `POST_MODE`, `CHANNEL_NAME`, `CHANNEL_HANDLE`
 
 `post.yml` runs at 07:30, 12:30, 18:30 and 21:00 IST (edit the cron lines, they are in UTC).
 GitHub may start scheduled jobs a few minutes late. The dedupe database is committed back to the

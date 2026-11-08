@@ -39,9 +39,16 @@ SKIP_SENSITIVE = env("SKIP_SENSITIVE", "true").lower() == "true"
 DEDUPE_HOURS = int(env("DEDUPE_HOURS", "72"))
 MAX_STORY_AGE_HOURS = int(env("MAX_STORY_AGE_HOURS", "18"))
 
-# ---- Claude API (Telugu writing + safety screening) --------------------------
+# ---- LLM for Telugu writing + safety screening --------------------------------
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY")
 CLAUDE_MODEL = env("CLAUDE_MODEL", "claude-sonnet-5-5")
+
+# ---- Google Gemini API (has a free tier; no payment needed) -------------------
+GEMINI_API_KEY = env("GEMINI_API_KEY")
+GEMINI_MODEL = env("GEMINI_MODEL", "gemini-2.5-flash")   # check AI Studio for the current free model name
+
+# "gemini" or "anthropic"; if unset, uses whichever API key is present
+LLM_PROVIDER = env("LLM_PROVIDER") or ("gemini" if GEMINI_API_KEY else "anthropic")
 
 # ---- Instagram Graph API ------------------------------------------------------
 IG_USER_ID = env("IG_USER_ID")

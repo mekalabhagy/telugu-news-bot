@@ -5,10 +5,12 @@ that is not in them. It also flags stories that should not be auto-posted.
 """
 import json
 import re
+import time
 
-import anthropic
+import requests
 
-from config import ANTHROPIC_API_KEY, CLAUDE_MODEL
+from config import (ANTHROPIC_API_KEY, CLAUDE_MODEL, GEMINI_API_KEY, GEMINI_MODEL,
+                    LLM_PROVIDER)
 
 CATEGORIES = ["politics", "india", "world", "business", "tech", "sports",
               "entertainment", "science", "local", "general"]
@@ -53,18 +55,43 @@ def telugu_ratio(s: str) -> float:
     return sum(1 for c in letters if 0x0C00 <= ord(c) <= 0x0C7F) / len(letters)
 
 
-def make_card(cluster) -> dict:
+def _generate(prompt: str) -> str:
+    """Call the configured LLM and return its raw text reply."""
+    if LLM_PROVIDER == "gemini":
+        if not GEMINI_API_KEY:
+            raise RuntimeError("GEMINI_API_KEY is not set")
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+        body = {
+            "systemInstruction": {"parts": [{"text": SYSTEM}]},
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.3, "responseMimeType": "application/json"},
+        }
+        for attempt in range(3):  # free tier rate-limits (429); wait and retry
+            r = requests.post(url, json=body, headers={"x-goog-api-key": GEMINI_API_KEY}, timeout=90)
+            if r.status_code == 429 and attempt < 2:
+                time.sleep(20 * (attempt + 1))
+                continue
+            break
+        if r.status_code >= 400:
+            raise RuntimeError(f"Gemini API {r.status_code}: {r.text[:300]}")
+        return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+
+    import anthropic
+
     if not ANTHROPIC_API_KEY:
         raise RuntimeError("ANTHROPIC_API_KEY is not set")
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    lines = [f"- {i.title}  [{i.source}]" for i in cluster.items[:8]]
     msg = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=1200,
-        system=SYSTEM,
-        messages=[{"role": "user", "content": "Headlines:\n" + "\n".join(lines)}],
+        model=CLAUDE_MODEL, max_tokens=1200, system=SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
     )
-    card = _extract_json(msg.content[0].text)
+    return msg.content[0].text
+
+
+def make_card(cluster) -> dict:
+    lines = [f"- {i.title}  [{i.source}]" for i in cluster.items[:8]]
+    raw = _generate("Headlines:\n" + "\n".join(lines))
+    card = _extract_json(raw)
 
     if card.get("skip"):
         return card

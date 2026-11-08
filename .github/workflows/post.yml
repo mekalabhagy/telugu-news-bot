@@ -35,6 +35,9 @@ jobs:
           POSTS_PER_RUN: ${{ vars.POSTS_PER_RUN || '2' }}
           CHANNEL_NAME: ${{ vars.CHANNEL_NAME }}
           CHANNEL_HANDLE: ${{ vars.CHANNEL_HANDLE }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
