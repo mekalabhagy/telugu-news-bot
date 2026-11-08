@@ -60,21 +60,34 @@ def _generate(prompt: str) -> str:
     if LLM_PROVIDER == "gemini":
         if not GEMINI_API_KEY:
             raise RuntimeError("GEMINI_API_KEY is not set")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
         body = {
             "systemInstruction": {"parts": [{"text": SYSTEM}]},
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.3, "responseMimeType": "application/json"},
         }
-        for attempt in range(3):  # free tier rate-limits (429); wait and retry
-            r = requests.post(url, json=body, headers={"x-goog-api-key": GEMINI_API_KEY}, timeout=90)
-            if r.status_code == 429 and attempt < 2:
-                time.sleep(20 * (attempt + 1))
-                continue
-            break
-        if r.status_code >= 400:
-            raise RuntimeError(f"Gemini API {r.status_code}: {r.text[:300]}")
-        return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+        # GEMINI_MODEL may be a comma-separated list; later models are backups
+        models = [m.strip() for m in GEMINI_MODEL.split(",") if m.strip()]
+        last = "no attempt made"
+        for model in models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            for attempt in range(4):
+                try:
+                    r = requests.post(url, json=body, headers={"x-goog-api-key": GEMINI_API_KEY}, timeout=60)
+                except requests.RequestException as e:      # timeout / network blip
+                    last = f"{model}: {type(e).__name__}"
+                    time.sleep(8 * (2 ** attempt))
+                    continue
+                if r.status_code in (429, 500, 502, 503, 504):  # overloaded: wait, retry
+                    last = f"{model}: HTTP {r.status_code}"
+                    time.sleep(8 * (2 ** attempt))
+                    continue
+                if r.status_code == 404:                        # model retired: try the next one
+                    last = f"{model}: not available"
+                    break
+                if r.status_code >= 400:
+                    raise RuntimeError(f"Gemini API {r.status_code}: {r.text[:300]}")
+                return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+        raise RuntimeError(f"Gemini unavailable ({last})")
 
     import anthropic
 

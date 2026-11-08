@@ -65,6 +65,7 @@ def cmd_run(args):
     clusters = sources.build_clusters()
     print(f"[run] {len(clusters)} story clusters, mode={mode}")
     made = 0
+    fails = 0
     for c in clusters:
         if made >= (args.count or config.POSTS_PER_RUN):
             break
@@ -76,8 +77,13 @@ def cmd_run(args):
         try:
             card = summarize.make_card(c)
         except Exception as e:
+            fails += 1
             print(f"[run] summarise failed ({e}); skipping {c.rep.title[:50]}")
+            if fails >= 3:
+                print("[run] 3 failures in a row: the AI service looks down. Stopping; next run will retry.")
+                break
             continue
+        fails = 0
         if card.get("skip"):
             db.record(fp, c.stems, c.rep.title, "", "skipped", note=card.get("skip_reason", ""))
             continue
