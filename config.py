@@ -45,7 +45,7 @@ CLAUDE_MODEL = env("CLAUDE_MODEL", "claude-sonnet-5-5")
 
 # ---- Google Gemini API (has a free tier; no payment needed) -------------------
 GEMINI_API_KEY = env("GEMINI_API_KEY")
-GEMINI_MODEL = env("GEMINI_MODEL", "gemini-2.5-flash")   # check AI Studio for the current free model name
+GEMINI_MODEL = env("GEMINI_MODEL", "gemini-3.8-flash")   # check AI Studio for the current free model name
 
 # "gemini" or "anthropic"; if unset, uses whichever API key is present
 LLM_PROVIDER = env("LLM_PROVIDER") or ("gemini" if GEMINI_API_KEY else "anthropic")
